@@ -4,6 +4,7 @@ import { createStackNavigator } from 'react-navigation-stack';
 
 import Main from './pages/Main';
 import User from './pages/User';
+import Repos from './pages/Repos';
 
 const Routes = createAppContainer(
   // semppre que formos usar um tipo de navigator devemos colocar dentro do AppContainer se nao ela nao vai funcionar
@@ -12,6 +13,7 @@ const Routes = createAppContainer(
       // estamos usando o navigator de stack e depois definindo quais componentes irao usar ele.
       Main,
       User,
+      Repos,
     },
     {
       headerLayoutPreset: 'center',

@@ -13,15 +13,16 @@ export const Form = styled.View`
   border-color: #eee;
 `;
 
-export const Input = styled.TextInput.attrs({
+export const Input = styled.TextInput.attrs(props => ({
   placeholderTextColor: '#999',
-})`
+  duplicate: props.duplicate,
+}))`
   flex: 1;
   height: 40px;
   background: #eee;
   border-radius: 4px;
   padding: 0 15px;
-  border: 1px solid #eee;
+  border: ${props => (props.duplicate ? '1px solid #e12' : '1px solid #eee')};
 `;
 
 // quando quisermos  estilizar um componente que nao é padrão da aplicação, ou que foi importado podemos passar ele entre parenteses logo depois do styled.
@@ -86,4 +87,10 @@ export const ProfileButtonText = styled.Text`
   font-weight: bold;
   color: #fff;
   text-transform: uppercase;
+`;
+
+export const RemoveUser = styled.View`
+  margin: 0;
+  position: absolute;
+  right: 0;
 `;

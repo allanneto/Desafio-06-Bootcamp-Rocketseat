@@ -3,7 +3,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import AsyncStorage from '@react-native-community/async-storage'; // importando o async storage para poder salvar as coisas no android, funciona como o localStorage porem por ele ser assincrono precisamos usar o await, ele demora um pouquinho para salvar as coisas nele.
-import Icon from 'react-native-vector-icons/MaterialIcons'; // importando um icone especifico do MaterialIcons
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Keyboard, ActivityIndicator } from 'react-native'; // importando Keyboard para poder manipular o teclado e as acoes, ActivityIndicator para poder manipular quando estiver ocorrendo uma atividade
 import api from '../../services/api'; // importando arquivo de axios que ira fazer as requisicoes, ele contem a baseUrl
 import {
@@ -18,6 +18,7 @@ import {
   Bio,
   ProfileButton,
   ProfileButtonText,
+  RemoveUser,
 } from './styles';
 
 export default class Main extends Component {
@@ -28,6 +29,7 @@ export default class Main extends Component {
       newUser: '',
       users: [],
       loading: false,
+      duplicate: false,
     };
   }
 
@@ -61,24 +63,39 @@ export default class Main extends Component {
   handleAddUser = async () => {
     const { users, newUser } = this.state;
 
-    this.setState({ loading: true });
+    this.setState({ loading: true, duplicate: false });
 
-    const response = await api.get(`/users/${newUser}`);
+    try {
+      const error = await users.find(e => e.login === newUser);
 
-    const data = {
-      name: response.data.name,
-      login: response.data.login,
-      bio: response.data.bio,
-      avatar: response.data.avatar_url,
-    };
+      if (error) {
+        throw new Error('Duplicated user');
+      }
 
-    this.setState({
-      users: [...users, data],
-      newUser: '',
-      loading: false,
-    });
+      const response = await api.get(`/users/${newUser}`);
 
-    Keyboard.dismiss();
+      const data = {
+        name: response.data.name,
+        login: response.data.login,
+        bio: response.data.bio,
+        avatar: response.data.avatar_url,
+      };
+
+      this.setState({
+        users: [...users, data],
+        newUser: '',
+        loading: false,
+        duplicate: false,
+      });
+
+      Keyboard.dismiss();
+    } catch (err) {
+      this.setState({
+        loading: false,
+        duplicate: true,
+        newUser: '',
+      });
+    }
   };
 
   handleNavigate = user => {
@@ -87,8 +104,25 @@ export default class Main extends Component {
     // definindo a rota que sera acessada ao executar a funcao.
   };
 
+  handleDelete = async user => {
+    const { login } = user;
+    const { users } = this.state;
+
+    const selectedUser = await users.find(u => u.login === login);
+
+    if (selectedUser) {
+      const index = users.indexOf(selectedUser);
+
+      users.splice(index, 1);
+
+      this.setState({ users });
+
+      AsyncStorage.setItem('users', JSON.stringify(users));
+    }
+  };
+
   render() {
-    const { users, newUser, loading } = this.state;
+    const { users, newUser, loading, duplicate } = this.state;
 
     return (
       <Container>
@@ -98,9 +132,12 @@ export default class Main extends Component {
             autoCapitalize="none"
             placeholder="Adicionar Usuario"
             value={newUser}
-            onChangeText={text => this.setState({ newUser: text })}
+            onChangeText={text =>
+              this.setState({ newUser: text, duplicate: false })
+            }
             returnKeyType="send"
             onSubmitEditing={this.handleAddUser}
+            duplicate={duplicate}
           />
           <SubmitButton loading={loading} onPress={this.handleAddUser}>
             {loading ? (
@@ -116,12 +153,20 @@ export default class Main extends Component {
           KeyExtractor={user => String(user.login)}
           renderItem={({ item }) => (
             <User>
+              <RemoveUser>
+                <Icon
+                  name="remove"
+                  size={20}
+                  color="#303030"
+                  onPress={() => this.handleDelete(item)}
+                />
+              </RemoveUser>
               <Avatar source={{ uri: item.avatar }} />
               <Name>{item.name}</Name>
               <Bio>{item.bio}</Bio>
 
               <ProfileButton onPress={() => this.handleNavigate(item)}>
-                {/* quando precisamos passar uma funcao para ser executa precisamo criar uma nova funcao. */}
+                {/* q uando precisamos passar uma funcao para ser executa precisamo criar uma nova funcao. */}
                 <ProfileButtonText>Ver Perfil</ProfileButtonText>
               </ProfileButton>
             </User>
